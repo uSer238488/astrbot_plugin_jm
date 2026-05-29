@@ -48,7 +48,7 @@ class MyPlugin(Star):
                 await asyncio.to_thread(
                     self.client.download_album_cover,
                     album_id,
-                    self.album_cover_dir
+                    f'{self.album_cover_dir}.png'
                 )
             except Exception as e:
                 yield event.plain_result(f"封面下载失败：{e}")
