@@ -17,7 +17,7 @@ download:
   cache: true
   image:
     decode: true
-    suffix: null
+    suffix: .jpg
   threading:
     image: 30
     photo: 20
