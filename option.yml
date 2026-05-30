@@ -6,9 +6,7 @@ client:
     meta_data:
       headers: null
       impersonate: chrome
-      proxies:
-        http: 127.0.0.1:7892
-        https: 127.0.0.1:7892
+      proxies: null 
     type: curl_cffi
   retry_times: 5
 dir_rule:
