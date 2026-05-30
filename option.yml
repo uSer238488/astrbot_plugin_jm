@@ -22,6 +22,4 @@ download:
     image: 30
     photo: 20
 log: true
-plugins:
-  valid: {}
 version: '2.1'
