@@ -4,7 +4,9 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 import astrbot.api.message_components as Comp 
-from jmcomic import JmAlbumDetail, JmOption, JmcomicException, JsonResolveFailException, MissingAlbumPhotoException, RequestRetryAllFailException
+from jmcomic import JmAlbumDetail, JmOption, JmcomicException, JsonResolveFailException, MissingAlbumPhotoException, RequestRetryAllFailException, create_option_by_file, download_album, Feature
+from pathlib import Path
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 import os 
 
 @register("astrbot_plugin_jm", "yuki", "提供查看、下载JM漫画的指令", "v1.1")
@@ -12,20 +14,75 @@ class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
-        # 客户端只创建一次，复用
-        self.client = JmOption.default().new_jm_client()
-        # 提前算好封面目录路径
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.album_cover_dir = os.path.join(script_dir, 'album_cover')
+        # 存储文件路径
+        # script_dir = os.path.dirname(os.path.abspath(__file__))
+        plugin_data_path = Path(get_astrbot_data_path()) / "plugin_data" / self.name 
+        # 本子封面文件夹路径
+        self.album_cover_dir = os.path.join(plugin_data_path, "album_cover")
+        # 本子本体文件夹路径
+        self.album_dir = os.path.join(plugin_data_path, "album") 
+
+        # 把本子本体文件夹路径写入环境变量
+        os.environ["JM_DOWNLOAD_DIR"] = self.album_dir
+
+        # 通过配置文件来创建option对象
+        self.option = create_option_by_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "option.yml"))
+
         # 确保目录存在
         os.makedirs(self.album_cover_dir, exist_ok=True)
+        os.makedirs(self.album_dir, exist_ok=True)
+
+        # 创建客户端
+        self.client = self.option.new_jm_client()
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
 
     @filter.command("jm")
-    async def get_album(self, event: AstrMessageEvent, id: str):
+    async def get_album(self, event: AstrMessageEvent, album_id: str):
         """返回PDF格式的本子""" 
+
+        from astrbot.api.message_components import Node
+
+        # 输入校验，防止路径穿越和无效输入
+        if not album_id.isdigit(): 
+            yield event.plain_result("id 格式不正确，车牌号应为纯数字") 
+            return 
+        
+        # 合成文件路径
+        res_path = os.path.join(self.album_dir, f"{album_id}.pdf") 
+
+        # 下载本子到指定目录、文件名为: {album_id}.pdf
+        if not os.path.exists(res_path): 
+            yield event.plain_result(f"开始下载 JM{album_id}，请稍候...")
+            try: 
+                await asyncio.to_thread(
+                    download_album, 
+                    album_id, 
+                    self.option,
+                    extra = Feature.export_pdf(
+                        pdf_dir = self.album_dir,
+                        filename_rule = "Aid" 
+                    )
+                )
+            except Exception as e: 
+                logger.exception(f"download_album failed, {type(e).__name__}: {e}") 
+                yield event.plain_result("下载失败，可能是本子不存在或者需要登录才能下载") 
+                return 
+
+        # 没有找到文件
+        if not os.path.exists(res_path): 
+            yield event.plain_result("下载完成但是没有找到文件") 
+            return 
+        
+        # 返回结果
+        yield event.chain_result([
+            Comp.At(qq = event.get_sender_id())
+        ])
+        yield event.chain_result([
+            Comp.File(file = res_path, name = f"{album_id}.pdf") 
+        ])
+
 
     @filter.command("获取详情") 
     async def bower_album(self, event: AstrMessageEvent, album_id: str): 
@@ -132,4 +189,4 @@ class MyPlugin(Star):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
 
 
-JmOption.default().to_file('./option.yml') 
+# JmOption.default().to_file('./option.yml') 

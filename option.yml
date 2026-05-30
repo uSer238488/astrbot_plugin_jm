@@ -1,0 +1,29 @@
+client:
+  cache: null
+  domain: []
+  impl: api
+  postman:
+    meta_data:
+      headers: null
+      impersonate: chrome
+      proxies:
+        http: 127.0.0.1:7892
+        https: 127.0.0.1:7892
+    type: curl_cffi
+  retry_times: 5
+dir_rule:
+  base_dir: ${JM_DOWNLOAD_DIR}
+  normalize_zh: null
+  rule: Bd_Pname
+download:
+  cache: true
+  image:
+    decode: true
+    suffix: null
+  threading:
+    image: 30
+    photo: 20
+log: true
+plugins:
+  valid: log
+version: '2.1'
