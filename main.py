@@ -29,8 +29,10 @@ class MyPlugin(Star):
 
     @filter.command("获取详情") 
     async def bower_album(self, event: AstrMessageEvent, album_id: str): 
+        """返回对应本子的详情"""
+
         from astrbot.api.message_components import Node, Plain
-        """仅返回对应本子的详情"""
+
         # 输入校验，防止路径穿越和无效输入
         if not album_id.isdigit(): 
             yield event.plain_result("id 格式不正确，车牌号应为纯数字") 
@@ -56,7 +58,9 @@ class MyPlugin(Star):
         res.append(f"📖 标题:  {album_detail.name}")
         res.append(f"🆔 ID:  JM{album_id}")
         res.append(f"🔗 链接:  https://18comic.vip/album/{album_id}/")
-        res.append(f"🤔描述: {album_detail.description}")
+        
+        if album_detail.description: 
+            res.append(f"🤔描述: {album_detail.description}")
 
         authors = ",".join(album_detail.authors) 
         res.append(f"✍️ 作者:   {authors}")
