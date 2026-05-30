@@ -27,9 +27,68 @@ class MyPlugin(Star):
     async def get_album(self, event: AstrMessageEvent, id: str):
         """返回PDF格式的本子""" 
 
-    @filter.command("jmv") 
-    async def bower_album(self, event: AstrMessageEvent, id: str): 
-        """仅返回对应本子的信息"""
+    @filter.command("获取详情") 
+    async def bower_album(self, event: AstrMessageEvent, album_id: str): 
+        from astrbot.api.message_components import Node, Plain
+        """仅返回对应本子的详情"""
+        # 输入校验，防止路径穿越和无效输入
+        if not album_id.isdigit(): 
+            yield event.plain_result("id 格式不正确，车牌号应为纯数字") 
+            return 
+        
+        # 获取本子
+        try: 
+            # album_detail: JmAlbumDetail = self.client.get_album_detail(album_id)
+            album_detail: JmAlbumDetail = await asyncio.to_thread(self.client.get_album_detail, album_id)
+        except MissingAlbumPhotoException:
+            yield event.plain_result("本子不存在或已被删除")
+            return
+        except JmcomicException as e:
+            yield event.plain_result(f"获取失败：{e}")
+            return
+        except Exception as e:
+            logger.exception("get_album_detail 异常")  # 留日志
+            yield event.plain_result("获取本子失败，请稍后再试")
+            return
+
+        # 生成结果
+        res = []
+        res.append(f"📖 标题:  {album_detail.name}")
+        res.append(f"🆔 ID:  JM{album_id}")
+        res.append(f"🔗 链接:  https://18comic.vip/album/{album_id}/")
+        res.append(f"🤔描述: {album_detail.description}")
+
+        authors = ",".join(album_detail.authors) 
+        res.append(f"✍️ 作者:   {authors}")
+        res.append(f"📅 发布日期:   {album_detail.pub_date}")
+        res.append(f"📅 更新日期:  {album_detail.update_date}")
+        res.append(f"📄 总页数:  {album_detail.page_count}")
+        res.append(f"👀 观看:   {album_detail.views}")
+        res.append(f"❤️ 点赞:  {album_detail.likes}")
+        res.append(f"💬 评论:   {album_detail.comment_count}")
+
+        tags = ",".join(album_detail.tags)
+        res.append(f"🏷️ 标签:  {tags}")
+
+        actors = ",".join(album_detail.actors)
+        res.append(f"🎭 人物:  {actors}")
+
+        works = ",".join(album_detail.works)
+        res.append(f"📚 作品:  {works}")
+
+        episode_list = "\n".join(f"{episode[0]} {episode[1]} {episode[2]}" for episode in album_detail.episode_list)
+        res.append(f"📑 章节 ({len(album_detail.episode_list)}):  \n{episode_list}")
+
+        # yield event.plain_result("\n".join(res))
+        node = Node(
+            uin = 2630903225,
+            name = "白丝协会会长",
+            content = [
+                Plain("\n".join(res))
+            ]
+        )
+        yield event.chain_result([node]) 
+
     
     @filter.command("获取封面")
     async def get_cover(self, event: AstrMessageEvent, album_id: str):
