@@ -62,7 +62,8 @@ class MyPlugin(Star):
                     self.option,
                     extra = Feature.export_pdf(
                         pdf_dir = self.album_dir,
-                        filename_rule = "Aid" 
+                        filename_rule = "Aid",
+                        delete_original_file=True,
                     )
                 )
             except Exception as e: 
@@ -77,11 +78,13 @@ class MyPlugin(Star):
         
         # 返回结果
         yield event.chain_result([
-            Comp.At(qq = event.get_sender_id())
+            Comp.At(qq=event.get_sender_id()),
+            Comp.Plain(f" JM{album_id} 下载完成"),
         ])
         yield event.chain_result([
-            Comp.File(file = res_path, name = f"{album_id}.pdf") 
+            Comp.File(file=res_path, name=f"JM{album_id}.pdf"),
         ])
+
 
 
     @filter.command("获取详情") 

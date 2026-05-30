@@ -23,5 +23,5 @@ download:
     photo: 20
 log: true
 plugins:
-  valid: log
+  valid: {}
 version: '2.1'
