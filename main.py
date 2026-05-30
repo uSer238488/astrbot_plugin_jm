@@ -102,7 +102,7 @@ class MyPlugin(Star):
             yield event.plain_result("id 格式不正确，应为纯数字")
             return
 
-        cover_path = os.path.join(self.album_cover_dir, f'{album_id}.png')
+        cover_path = os.path.join(self.album_cover_dir, f'{album_id}.jpg')
 
         # 不存在则下载
         if not os.path.exists(cover_path):
