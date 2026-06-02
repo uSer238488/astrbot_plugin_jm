@@ -52,9 +52,18 @@ class MyPlugin(Star):
         # 合成文件路径
         res_path = os.path.join(self.album_dir, f"{album_id}.pdf") 
 
+        # 如果章节数过多则停止下载
+        album_detail: JmAlbumDetail = await asyncio.to_thread(self.client.get_album_detail, album_id)
+        if len(album_detail.episode_list) > 3: 
+            yield event.chain_result([
+                Comp.At(qq = event.get_sender_id()),
+                Comp.Plain(f"\n这本漫画足足有{len(album_detail.episode_list)}个章节！\n有可能会导致服务器卡死所以无法下载😭")
+            ])
+            return 
+
         # 下载本子到指定目录、文件名为: {album_id}.pdf
         if not os.path.exists(res_path): 
-            yield event.plain_result(f"开始下载 JM{album_id}，请稍候...")
+            yield event.plain_result(f"开始下载: \n{album_detail.name}, \n请稍候...")
             try: 
                 await asyncio.to_thread(
                     download_album, 
@@ -124,9 +133,9 @@ class MyPlugin(Star):
 
         authors = ",".join(album_detail.authors) 
         res.append(f"✍️ 作者:   {authors}")
-        res.append(f"📅 发布日期:   {album_detail.pub_date}")
-        res.append(f"📅 更新日期:  {album_detail.update_date}")
-        res.append(f"📄 总页数:  {album_detail.page_count}")
+        # res.append(f"📅 发布日期:   {album_detail.pub_date}")
+        # res.append(f"📅 更新日期:  {album_detail.update_date}")
+        # res.append(f"📄 总页数:  {album_detail.page_count}")
         res.append(f"👀 观看:   {album_detail.views}")
         res.append(f"❤️ 点赞:  {album_detail.likes}")
         res.append(f"💬 评论:   {album_detail.comment_count}")
