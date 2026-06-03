@@ -18,8 +18,9 @@ class MyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
 
-        # 获取黑名单群聊
+        # 获取配置信息
         self.blacklist: list[str] = [str(gid) for gid in config.get("group_blacklist", [])] if config else []
+        self.refuse_message: str = str(config.get("reply_message", "有内鬼，终止交易！"))
 
         logger.info("获取黑名单群聊成功") 
         logger.info(' '.join(self.blacklist)) 
@@ -51,11 +52,11 @@ class MyPlugin(Star):
     async def get_album(self, event: AstrMessageEvent, album_id: str):
         """返回PDF格式的本子""" 
 
-        # 黑名单群聊，有内鬼，终止交易
-        if await self.check_group_id(event): 
+        # 黑名单群聊，终止交易
+        if event.get_group_id in self.blacklist: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
-                Comp.Plain("有内鬼，终止交易！")
+                Comp.Plain(self.refuse_message)
             ])
             return 
         
@@ -127,11 +128,11 @@ class MyPlugin(Star):
     async def get_photo(self, event: AstrMessageEvent, photo_id: str): 
         """返回PDF格式的章节"""
 
-        # 黑名单群聊，有内鬼，终止交易
-        if await self.check_group_id(event): 
+        # 黑名单群聊，终止交易
+        if event.get_group_id in self.blacklist: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
-                Comp.Plain("有内鬼，终止交易！")
+                Comp.Plain(self.refuse_message)
             ])
             return 
         
@@ -251,10 +252,10 @@ class MyPlugin(Star):
         """返回对应本子的封面"""
 
         # 黑名单群聊，终止交易
-        if await self.check_group_id(event): 
+        if event.get_group_id in self.blacklist: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
-                Comp.Plain("有内鬼，终止交易！")
+                Comp.Plain(self.refuse_message)
             ])
             return 
         
@@ -280,7 +281,7 @@ class MyPlugin(Star):
 
             # 下载完再次确认文件确实生成了
             if not os.path.exists(cover_path):
-                yield event.plain_result("下载完成但未找到封面文件，可能是 id 无效")
+                yield event.plain_result("下载完成但未找到封面文件")
                 return
 
         # 返回封面图
@@ -289,14 +290,11 @@ class MyPlugin(Star):
             Comp.Image.fromFileSystem(cover_path)
         ])
 
-    async def check_group_id(self, event: AstrMessageEvent): 
-        """检查群号是否在黑名单内"""
-
-        # 获取群聊id
-        group_id = event.get_group_id()
-
-        # 返回结果
-        return (group_id in self.blacklist)
+    
+    @filter.command("/jmclear") 
+    async def JMclear(self, event: AstrMessageEvent, opt: int = 0): 
+        """使用该命令清理空间"""
+        # TODO
 
 
     async def terminate(self):
