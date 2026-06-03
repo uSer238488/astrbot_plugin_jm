@@ -18,8 +18,8 @@ class MyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
 
-        # 获取插件配置
-        self.config = config 
+        # 获取黑名单群聊
+        self.blacklist: list[str] = [str(gid) for gid in config.get("group_blacklist", [])] if config else []
 
         # 存储文件路径
         # script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -294,14 +294,11 @@ class MyPlugin(Star):
     async def check_group_id(self, event: AstrMessageEvent): 
         """检查群号是否在黑名单内"""
 
-        # 获取黑名单列表
-        blacklist = self.config["群聊黑名单"]
-
         # 获取群聊id
         group_id = event.get_group_id()
 
         # 返回结果
-        return (group_id in blacklist)
+        return (group_id in self.blacklist)
 
 
     async def terminate(self):

@@ -1,5 +1,5 @@
 {
-    "群聊黑名单": {
+    "group_blacklist": {
         "description": "写入黑名单的群聊无法使用 /jm 和 /获取封面 功能。用于风险比较大的群聊，防止机器人被举报",
         "type": "list",
         "default": []
