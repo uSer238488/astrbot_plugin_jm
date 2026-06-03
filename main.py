@@ -18,8 +18,13 @@ class MyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
 
+        logger.info("插件初始化")
+
         # 获取黑名单群聊
         self.blacklist: list[str] = [str(gid) for gid in config.get("group_blacklist", [])] if config else []
+
+        logger.info("获取黑名单群聊成功") 
+        logger.info(' '.join(self.blacklist)) 
 
         # 存储文件路径
         # script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -191,6 +196,8 @@ class MyPlugin(Star):
         if not album_id.isdigit(): 
             yield event.plain_result("id 格式不正确，车牌号应为纯数字") 
             return 
+        
+        logger.info("检查成功!")
         
         # 获取本子
         try: 
