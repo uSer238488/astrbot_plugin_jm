@@ -18,8 +18,6 @@ class MyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
 
-        logger.info("插件初始化")
-
         # 获取黑名单群聊
         self.blacklist: list[str] = [str(gid) for gid in config.get("group_blacklist", [])] if config else []
 
@@ -27,28 +25,21 @@ class MyPlugin(Star):
         logger.info(' '.join(self.blacklist)) 
 
         # 存储文件路径
-        # script_dir = os.path.dirname(os.path.abspath(__file__))
         plugin_data_path = Path(get_astrbot_data_path()) / "plugin_data" / self.name 
+        self.album_cover_dir = os.path.join(plugin_data_path, "album_cover") # 本子封面文件夹路径       
+        self.album_dir = os.path.join(plugin_data_path, "album") # 本子本体文件夹路径
+        self.photo_dir = os.path.join(plugin_data_path, "photo") # 章节本体文件夹
 
-        # 本子封面文件夹路径
-        self.album_cover_dir = os.path.join(plugin_data_path, "album_cover")
-
-        # 本子本体文件夹路径
-        self.album_dir = os.path.join(plugin_data_path, "album") 
-
-        # 章节本体文件夹
-        self.photo_dir = os.path.join(plugin_data_path, "photo") 
+        # 确保目录存在
+        os.makedirs(self.album_cover_dir, exist_ok = True)
+        os.makedirs(self.album_dir, exist_ok = True)
+        os.makedirs(self.photo_dir, exist_ok = True)
 
         # 把本子和章节本体文件夹路径写入环境变量
         os.environ["JM_DOWNLOAD_DIR"] = os.path.join(plugin_data_path) 
 
         # 通过配置文件来创建option对象
         self.option = create_option_by_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "option.yml"))
-
-        # 确保目录存在
-        os.makedirs(self.album_cover_dir, exist_ok = True)
-        os.makedirs(self.album_dir, exist_ok = True)
-        os.makedirs(self.photo_dir, exist_ok = True)
 
         # 创建客户端
         self.client = self.option.new_jm_client()
@@ -150,7 +141,7 @@ class MyPlugin(Star):
             return 
         
         # 合成文件路径
-        res_path = os.path.join(self.album_dir, f"{photo_id}.pdf") 
+        res_path = os.path.join(self.photo_dir, f"{photo_id}.pdf") 
 
         # 下载本子到指定目录、文件名为: {photo_id}.pdf
         if not os.path.exists(res_path): 
