@@ -10,7 +10,7 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 import astrbot.api.message_components as Comp 
 
 
-from jmcomic import JmAlbumDetail, JmOption, JmcomicException, JsonResolveFailException, MissingAlbumPhotoException, RequestRetryAllFailException, create_option_by_file, download_album, Feature, download_photo
+from jmcomic import JmAlbumDetail, JmOption, JmPhotoDetail, JmcomicException, JsonResolveFailException, MissingAlbumPhotoException, RequestRetryAllFailException, create_option_by_file, download_album, Feature, download_photo
 
 
 @register("astrbot_plugin_jm", "yuki", "提供查看、下载JM漫画的指令", "v1.1")
@@ -21,6 +21,7 @@ class MyPlugin(Star):
         # 获取配置信息
         self.blacklist: list[str] = [str(gid) for gid in config.get("group_blacklist", [])] if config else []
         self.refuse_message: str = str(config.get("reply_message", "有内鬼，终止交易！"))
+        self.page_limit: int = int(config.get("page_limit", 60))
 
         logger.info("获取黑名单群聊成功") 
         logger.info(' '.join(self.blacklist)) 
@@ -79,6 +80,14 @@ class MyPlugin(Star):
             yield event.plain_result("获取本子失败，请稍后再试")
             return
         
+        # 如果本子的页数过多则直接中断
+        if album_detail.page_count > self.page_limit: 
+            yield event.chain_result([
+                Comp.At(qq = event.get_sender_id()),
+                Comp.Plain(f"{album_detail.page_count}页实在太多啦，\n亚托莉受不了的啦(≧﹏ ≦)") 
+            ])
+            return 
+        
         # 如果本子有多个章节则直接中断，并且引导用户使用jmp指令
         if len(album_detail.episode_list) > 1: 
             yield event.chain_result([
@@ -134,6 +143,28 @@ class MyPlugin(Star):
                 Comp.At(qq = event.get_sender_id()),
                 Comp.Plain(self.refuse_message)
             ])
+            return 
+        
+        # 获取本子详情
+        try: 
+            photo_detail: JmPhotoDetail = await asyncio.to_thread(self.client.get_photo_detail, photo_id)
+        except MissingAlbumPhotoException:
+            yield event.plain_result("本子不存在或已被删除")
+            return
+        except JmcomicException as e:
+            yield event.plain_result(f"获取失败：{e}")
+            return
+        except Exception as e:
+            logger.exception("get_album_detail 异常")  # 留日志
+            yield event.plain_result("获取本子失败，请稍后再试")
+            return
+        
+        # 如果页数太多直接中断
+        if len(photo_detail) > self.page_limit: 
+            yield event.chain_result([
+                            Comp.At(qq = event.get_sender_id()),
+                            Comp.Plain(f"{len(photo_detail)}页实在太多啦，\n亚托莉受不了的啦(≧﹏ ≦)") 
+                        ])
             return 
         
         # 输入校验，防止路径穿越和无效输入
