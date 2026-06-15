@@ -54,7 +54,7 @@ class MyPlugin(Star):
         """返回PDF格式的本子""" 
 
         # 黑名单群聊，终止交易
-        if event.get_group_id in self.blacklist: 
+        if event.get_group_id() in self.blacklist: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
                 Comp.Plain(self.refuse_message)
@@ -66,7 +66,7 @@ class MyPlugin(Star):
             yield event.plain_result("❌id格式不正确!") 
             return 
         
-        # 获取本子详情
+        # 获取本子详情(album)
         try: 
             album_detail: JmAlbumDetail = await asyncio.to_thread(self.client.get_album_detail, album_id)
         except MissingAlbumPhotoException:
@@ -80,8 +80,22 @@ class MyPlugin(Star):
             yield event.plain_result("获取本子失败，请稍后再试")
             return
         
+        # 获取本子详情(photo)
+        try: 
+            photo_detail: JmPhotoDetail = await asyncio.to_thread(self.client.get_photo_detail, album_id)
+        except MissingAlbumPhotoException:
+            yield event.plain_result("本子不存在或已被删除")
+            return
+        except JmcomicException as e:
+            yield event.plain_result(f"获取失败：{e}")
+            return
+        except Exception as e:
+            logger.exception("get_album_detail 异常")  # 留日志
+            yield event.plain_result("获取本子失败，请稍后再试")
+            return
+        
         # 如果本子的页数过多则直接中断
-        if album_detail.page_count > self.page_limit: 
+        if len(photo_detail) > self.page_limit: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
                 Comp.Plain(f"{album_detail.page_count}页实在太多啦，\n亚托莉受不了的啦(≧﹏ ≦)") 
@@ -248,6 +262,7 @@ class MyPlugin(Star):
 
         authors = ",".join(album_detail.authors) 
         res.append(f"✍️ 作者:   {authors}")
+        res.append(f"📋页数： {album_detail.page_count}")
         # res.append(f"📅 发布日期:   {album_detail.pub_date}")
         # res.append(f"📅 更新日期:  {album_detail.update_date}")
         # res.append(f"📄 总页数:  {album_detail.page_count}")
