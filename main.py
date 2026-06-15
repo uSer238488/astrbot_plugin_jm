@@ -98,7 +98,7 @@ class MyPlugin(Star):
         if len(photo_detail) > self.page_limit: 
             yield event.chain_result([
                 Comp.At(qq = event.get_sender_id()),
-                Comp.Plain(f"{album_detail.page_count}页实在太多啦，\n亚托莉受不了的啦(≧﹏ ≦)") 
+                Comp.Plain(f"{len(photo_detail)}页实在太多啦，\n亚托莉受不了的啦(≧﹏ ≦)") 
             ])
             return 
         
